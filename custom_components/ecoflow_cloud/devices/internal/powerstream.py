@@ -375,14 +375,21 @@ class PowerStream(PrivateAPIProtoDeviceMixin, BaseDevice):
                         field_name = (
                             f"watth{watth_type_name[0].upper()}{watth_type_name[1:]}"
                         )
-                        params.update(
-                            {
-                                f"{command.func}_{command.id}.{field_name}": sum(
-                                    watth_item.watth
-                                ),
-                                f"{command.func}_{command.id}.{field_name}Timestamp": watth_item.timestamp,
-                            }
-                        )
+                        dt_now = dt.utcnow()
+                        dt_today = dt_now.replace(hour=0, minute=0, second=0, microsecond=0)
+                        dt_days = dict([
+                            [str(int(dt_today.timestamp())), ""],
+                            [str(int(dt_today.timestamp()) - 24*60*60), "Yesterday"]
+                        ])
+                        if str(watth_item.timestamp) in dt_days.keys():
+                            params.update(
+                                {
+                                    f"{command.func}_{command.id}.{field_name}{dt_days[str(watth_item.timestamp)]}": sum(
+                                        watth_item.watth
+                                    ),
+                                    f"{command.func}_{command.id}.{field_name}{dt_days[str(watth_item.timestamp)]}Timestamp": watth_item.timestamp,
+                                }
+                            )
 
                 # Add cmd information to allow extraction in private_api_extract_quota_message
                 res["cmdFunc"] = command_desc.func
