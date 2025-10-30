@@ -9,9 +9,9 @@ from .. import platform_pb2 as platform
 # https://github.com/tomvd/local-powerstream/issues/4#issuecomment-2781354316
 class AddressId(enum.Enum):
     IOT = 1
-    IOT2 = 2
+    SMARTMETER = 2
     APP = 32
-    MQTT = 53
+    POWERSTREAM = 53
 
 
 class DirectionId(enum.Enum):
@@ -68,9 +68,12 @@ class Command(enum.Enum):
 
 # https://github.com/peuter/ecoflow/blob/04bb01fb3d6dcd845b0a896342b0d895f532cf85/model/ecoflow/constant.py#L9
 class WatthType(enum.IntEnum):
+    TOTAL = 1
     TO_SMART_PLUGS = 2  # ?
     TO_BATTERY = 3  # ?
     FROM_BATTERY = 4  # ?
+    SINGLE_PLUG = 5
+    PLUG_USE_TIME = 6
     PV1 = 7  # ?
     PV2 = 8  # ?
 

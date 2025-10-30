@@ -59,9 +59,8 @@ def build_command(
         command=command,
         payload=payload,
         src=AddressId.APP,
-        dest=AddressId.MQTT,
+        dest=AddressId.POWERSTREAM,
     )
-
 
 class PowerStream(PrivateAPIProtoDeviceMixin, BaseDevice):
     @override
@@ -308,8 +307,13 @@ class PowerStream(PrivateAPIProtoDeviceMixin, BaseDevice):
         ]
 
     @override
+    def _prepare_data_status_topic(self, raw_data: bytes) -> dict[str, Any]:
+        return super()._prepare_data(raw_data)
+
+    @override
     def _prepare_data(self, raw_data: bytes) -> dict[str, Any]:
         res: dict[str, Any] = {"params": {}}
+        params = cast(JSONDict, res.setdefault("params", {}))
         from google.protobuf.json_format import MessageToDict
 
         from .proto import ecopacket_pb2 as ecopacket
@@ -336,6 +340,12 @@ class PowerStream(PrivateAPIProtoDeviceMixin, BaseDevice):
                         self.device_data.sn,
                     )
 
+                if not message.cmd_func and not message.cmd_id and message.code == "-2":
+                    params.update({"status": 0})
+                    continue
+                elif message.src == AddressId.POWERSTREAM.value:
+                    params.update({"status": 1})
+
                 command_desc = CommandFuncAndId(
                     func=message.cmd_func, id=message.cmd_id
                 )
@@ -350,7 +360,6 @@ class PowerStream(PrivateAPIProtoDeviceMixin, BaseDevice):
                     )
                     continue
 
-                params = cast(JSONDict, res.setdefault("params", {}))
                 if command in {Command.PRIVATE_API_POWERSTREAM_HEARTBEAT}:
                     payload = get_expected_payload_type(command)()
                     _ = payload.ParseFromString(message.pdata)

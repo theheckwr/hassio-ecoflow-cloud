@@ -73,6 +73,8 @@ class EcoflowDataHolder:
         self.get.append(msg)
 
     def add_get_reply_message(self, msg: dict[str, Any]):
+        if "status" in msg.get("params", {}):
+            self.update_status(msg)
         try:
             result = self.extract_quota_message(msg)
         except:
@@ -108,6 +110,8 @@ class EcoflowDataHolder:
                     if raw["moduleSn"] != self.module_sn:
                         return
                 if "params" in raw:
+                    if "status" in raw["params"]:
+                        self.update_status(raw)
                     self.params.update(raw["params"])
                     self.params_time = dt.utcnow()
 

@@ -447,7 +447,7 @@ class _OnlineStatus(enum.Enum):
 class StatusSensorEntity(SensorEntity, EcoFlowAbstractEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    offline_barrier_sec: int = 120  # 2 minutes
+    offline_barrier_sec: int = 30  # 30 seconds
 
     def __init__(
         self,
@@ -480,7 +480,7 @@ class StatusSensorEntity(SensorEntity, EcoFlowAbstractEntity):
             self._skip_count = 0
             self._actualize_attributes()
             changed = True
-        else:
+        elif self._online != _OnlineStatus.OFFLINE:
             self._skip_count += 1
 
         changed = self._actualize_status() or changed
@@ -504,7 +504,7 @@ class StatusSensorEntity(SensorEntity, EcoFlowAbstractEntity):
                 changed = True
         elif (
             self._online not in {_OnlineStatus.OFFLINE, _OnlineStatus.ASSUME_OFFLINE}
-            and self._skip_count >= self._offline_skip_count
+            and self._skip_count > self._offline_skip_count
         ):
             self._online = _OnlineStatus.ASSUME_OFFLINE
             self._attr_native_value = "assume_offline"
@@ -541,29 +541,12 @@ class QuotaStatusSensorEntity(StatusSensorEntity):
         self._attrs[ATTR_QUOTA_REQUESTS] = 0
 
     def _actualize_status(self) -> bool:
-        changed = False
-        if (
-            self._online != _OnlineStatus.ASSUME_OFFLINE
-            and self._skip_count >= self._offline_skip_count * 2
-        ):
-            self._online = _OnlineStatus.ASSUME_OFFLINE
-            self._attr_native_value = "assume_offline"
-            self._attrs[ATTR_MQTT_CONNECTED] = self._client.mqtt_client.is_connected()
-            changed = True
-        elif (
-            self._online != _OnlineStatus.ASSUME_OFFLINE
-            and self._skip_count >= self._offline_skip_count
-        ):
+        if self._skip_count == self._offline_skip_count:
             self.hass.async_create_background_task(
                 self._client.quota_all(self._device.device_info.sn), "get quota"
             )
             self._attrs[ATTR_QUOTA_REQUESTS] = self._attrs[ATTR_QUOTA_REQUESTS] + 1
-            changed = True
-        elif self._online != _OnlineStatus.ONLINE and self._skip_count == 0:
-            self._online = _OnlineStatus.ONLINE
-            self._attr_native_value = "online"
-            self._attrs[ATTR_MQTT_CONNECTED] = self._client.mqtt_client.is_connected()
-            changed = True
+        changed = super()._actualize_status()
         return changed
 
 

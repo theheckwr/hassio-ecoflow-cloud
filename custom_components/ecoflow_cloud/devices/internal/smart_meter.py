@@ -3,10 +3,6 @@ from collections.abc import Sequence
 from typing import Any, cast, override
 
 
-from homeassistant.components.sensor import SensorEntity # pyright: ignore[reportMissingImports]
-from homeassistant.components.switch import SwitchEntity # pyright: ignore[reportMissingImports]
-from homeassistant.components.number import NumberEntity # pyright: ignore[reportMissingImports]
-from homeassistant.components.select import SelectEntity # pyright: ignore[reportMissingImports]
 from homeassistant.util import dt # pyright: ignore[reportMissingImports]
 
 from ...api import EcoflowApiClient
@@ -108,15 +104,9 @@ class SmartMeter(BaseDevice):
         if data_type == self.device_info.data_topic:
             raw = self._prepare_data_data_topic(raw_data)
             self.data.update_data(raw)
-        elif data_type == self.device_info.set_topic:
-            # Commands send from HomeAssistant
-            pass
         elif data_type == self.device_info.set_reply_topic:
             raw = self._prepare_data_set_reply_topic(raw_data)
             self.data.add_set_reply_message(raw)
-        elif data_type == self.device_info.get_topic:
-            # Commands send from HomeAssistant
-            pass
         elif data_type == self.device_info.get_reply_topic:
             raw = self._prepare_data_get_reply_topic(raw_data)
             self.data.add_get_reply_message(raw)
@@ -126,10 +116,15 @@ class SmartMeter(BaseDevice):
         else:
             return False
         return True
+    
+    @override
+    def _prepare_data_status_topic(self, raw_data: bytes) -> dict[str, Any]:
+        return super()._prepare_data(raw_data)
 
     @override
     def _prepare_data(self, raw_data: bytes) -> dict[str, Any]:
         res: dict[str, Any] = {"params": {}}
+        params = cast(JSONDict, res.setdefault("params", {}))
         from google.protobuf.json_format import MessageToDict # pyright: ignore[reportMissingModuleSource]
         from .proto.support import flatten_dict
 
@@ -157,6 +152,12 @@ class SmartMeter(BaseDevice):
                         self.device_data.sn,
                     )
 
+                if not message.cmd_func and not message.cmd_id and message.code == "-2":
+                    params.update({"status": 0})
+                    continue
+                elif message.src == AddressId.SMARTMETER.value:
+                    params.update({"status": 1})
+
                 command_desc = CommandFuncAndId(
                     func=message.cmd_func, id=message.cmd_id
                 )
@@ -171,7 +172,6 @@ class SmartMeter(BaseDevice):
                     )
                     continue
 
-                params = cast(JSONDict, res.setdefault("params", {}))
                 if command in {Command.PRIVATE_API_SMART_METER_DISPLAY_PROPERTY_UPLOAD}:
                     payload = get_expected_payload_type(command)()
                     try:

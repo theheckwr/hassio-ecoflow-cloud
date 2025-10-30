@@ -4,16 +4,16 @@ import json
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Any, cast
+from typing import Any, cast, Callable
 
-from homeassistant.components.button import ButtonEntity
-from homeassistant.components.number import NumberEntity
-from homeassistant.components.select import SelectEntity
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.util import dt
+from homeassistant.components.button import ButtonEntity # pyright: ignore[reportMissingImports]
+from homeassistant.components.number import NumberEntity # pyright: ignore[reportMissingImports]
+from homeassistant.components.select import SelectEntity # pyright: ignore[reportMissingImports]
+from homeassistant.components.sensor import SensorEntity # pyright: ignore[reportMissingImports]
+from homeassistant.components.switch import SwitchEntity # pyright: ignore[reportMissingImports]
+from homeassistant.core import HomeAssistant # pyright: ignore[reportMissingImports]
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator # pyright: ignore[reportMissingImports]
+from homeassistant.util import dt # pyright: ignore[reportMissingImports]
 
 from ..api import EcoflowApiClient
 from ..api.message import JSONDict, JSONMessage, Message
@@ -165,15 +165,17 @@ class BaseDevice(ABC):
         if data_type == self.device_info.data_topic:
             raw = self._prepare_data_data_topic(raw_data)
             self.data.update_data(raw)
-        elif data_type == self.device_info.set_topic:
-            raw = self._prepare_data_set_topic(raw_data)
-            self.data.add_set_message(raw)
+        # These are the commands send by HomeAssistant, is this neccessary?
+        # elif data_type == self.device_info.set_topic:
+            # raw = self._prepare_data_set_topic(raw_data)
+            # self.data.add_set_message(raw)
         elif data_type == self.device_info.set_reply_topic:
             raw = self._prepare_data_set_reply_topic(raw_data)
             self.data.add_set_reply_message(raw)
-        elif data_type == self.device_info.get_topic:
-            raw = self._prepare_data_get_topic(raw_data)
-            self.data.add_get_message(raw)
+        # These are the commands send by HomeAssistant, is this neccessary?
+        # elif data_type == self.device_info.get_topic:
+            # raw = self._prepare_data_get_topic(raw_data)
+            # self.data.add_get_message(raw)
         elif data_type == self.device_info.get_reply_topic:
             raw = self._prepare_data_get_reply_topic(raw_data)
             self.data.add_get_reply_message(raw)
