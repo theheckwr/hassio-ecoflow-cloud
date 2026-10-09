@@ -386,6 +386,25 @@ class PowerStream(BaseInternalDevice):
                             continue
 
                         field_name = f"watth{watth_type_name[0].upper()}{watth_type_name[1:]}"
+                        if f"{command.func}_{command.id}.{field_name}Timestamp" in params:
+                            if params[ts_key] > watth_item.timestamp:
+                                # New timestamp is older -> Yesterday
+                                params.update(
+                                    {
+                                        f"{command.func}_{command.id}.{field_name}Yesterday": sum(watth_item.watth),
+                                        f"{command.func}_{command.id}.{field_name}YesterdayTimestamp": watth_item.timestamp,
+                                    }
+                                )
+                                continue
+                            else:
+                                # New timestamp is newer -> we already have yesterday, so move it to yesterday
+                                params.update(
+                                    {
+                                        f"{command.func}_{command.id}.{field_name}Yesterday": params[f"{command.func}_{command.id}.{field_name}"],
+                                        f"{command.func}_{command.id}.{field_name}YesterdayTimestamp": params[f"{command.func}_{command.id}.{field_name}Timestamp"],
+                                    }
+                                )
+                        # If no entry exists or the entry was yesterdays: overwrite
                         params.update(
                             {
                                 f"{command.func}_{command.id}.{field_name}": sum(watth_item.watth),
